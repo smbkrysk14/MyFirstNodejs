@@ -6,7 +6,7 @@ var URL = require('url');
 var fs = require('fs');
 var path = require('path');
 
-// --- 共通の設定 ---
+// --- 共通の設定 ---＠＠＠＠
 // 階層の指定
 var LINK_LEVEL = 3;
 // 基準となるページURL
