@@ -1,3 +1,4 @@
+// ブランチ確認
 // リンクを解析してダウンロード for Node.js
 // ---モジュールの取り込み ---
 var client = require('cheerio-httpcli');
