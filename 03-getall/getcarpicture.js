@@ -6,91 +6,63 @@ var URL = require('url');
 var fs = require('fs');
 var path = require('path');
 
+// 保存先のディレクトリ（カレント/img）
+var savedir = __dirname + "/img";
+// 存在していなければディレクトリ作成。
+if (!fs.existsSync(savedir)) {
+  fs.mkdirSync(savedir);
+}
+
+// 保存する際のファイル名接頭辞
+var fileNamePrefix = "honda_accord";
+
 // --- 共通の設定 ---
-// 階層の指定
-var LINK_LEVEL = 1;
 // 基準となるページURL
-var TARGET_URL = "http://www.goo-net.com/usedcar/spread/goo/19/700630033930151009001.html/";
-var list = {};
+var TARGET_URL = "http://www.goo-net.com/usedcar/spread/goo/19/700630033930151009001/gallery.html";
 
 // メイン処理
-downloadRec(TARGET_URL, 0);
+downloadRec(TARGET_URL);
 
 // 指定のurlを最大レベルlevelまでダウンロード
-function downloadRec(url, level) {
-  
-  console.log("①");
-  // 最大レベルチェック
-  if (level >= LINK_LEVEL) return;
-  // 既出のサイトは無視する
-  if (list[url]) return;
-  list[url] = true;
-
-  // 基準ページ以外なら無視する
-  var us = TARGET_URL.split("/");
-  
-  // 末尾の要素を削除
-  us.pop();
-  console.log("[us] : " + us);
-  var base = us.join("/");
-  console.log("[base] : " + base);
-  if (url.indexOf(base) < 0) return;
-
+function downloadRec(url) {
+  console.log(savedir);
   // HTMLを取得する
+  /**
+  fetch(url[, get-param, callback])
+  urlで指定したWEBページをGETメソッドで取得し、文字コードの変換とHTMLパースを行いcallback関数に返します。
+  
+  callback関数には以下の4つの引数が渡されます。
+  
+  Errorオブジェクト
+  cheerio.load()でHTMLコンテンツをパースしたオブジェクト(独自拡張版)
+  requestモジュールのresponseオブジェクト(独自拡張版)
+  UTF-8に変換したHTMLコンテンツ
+  GET時にパラメータを付加する場合は第2引数のget-paramに連想配列で指定します。
+  */
   client.fetch(url, {}, function(err, $, res) {
 
     // 車の画像を取得
-    $(".album").children(".cur").children("img").each(function(idx) {
-      console.log("ループの中");
+    $("span.thumb > a > img").each(function(idx) {
+    
       // 画像のパスを得る
       var src = $(this).attr('src');
       if (!src) return;
+      
       // 絶対パスを相対パスに変更
       src = URL.resolve(url, src);
-
-      // '#' 以降を無視する(a.html#aa と a.html#bb は同じもの)
-      href = href.replace(/\#.+$/, ""); // 末尾の#を消す
-      downloadRec(href, level + 1);
+      
+      // 保存用のファイル名を作成
+      //  1.拡張子を取得
+      var regexResult = src.match(/(.+)(\.[^.]+$)/);
+      //  2.指定されたファイル名接頭辞に連番を振り拡張子を結合
+      var fname = fileNamePrefix + idx + regexResult[2];
+      
+      // 保存先のパスを作成
+      var savepath = savedir + "/" + fname;
+      
+      // 画像をダウンロードして保存する
+      request(src).pipe(fs.createWriteStream(savepath));
     });
-
-    // ページを保存(ファイル名を決定する)
-    // 最後の１文字がスラッシュの場合
-    if (url.substr(url.length-1, 1) == '/') {
-      url += "index.html"; // インデックスを自動追加
-
-    }
-    //var savepath = url.split("/").slice(2).join("/");
-    var savepath = "output";
-    checkSaveDir(savepath);
-    //console.log(savepath);
-    console.log($.html());
-    fs.writeFileSync(savepath, $.html());
   });
-}
-
-// 保存先のディレクトリが存在するか確認
-function checkSaveDir(fname) {
-  /*
-  console.log("[fname] : " + fname);
-  // ディレクトリ部分だけ取り出す
-  var dir = path.dirname(fname);
-  console.log("[dir] : " + dir);
-  // ディレクトリを再帰的に作成する
-  var dirlist = dir.split("/");
-  var p = "";
-  for (var i in dirlist) {
-    p += dirlist[i] + "/";
-    if (!fs.existsSync(p)) {
-      fs.mkdirSync(p);
-    }
-  }
-  */
-  console.log("[fname] : " + fname);
-  console.log("existsSyncを実行");
-  if (!fs.existsSync(fname)) {
-    console.log("existsSync：true");
-    fs.mkdirSync(fname);
-    console.log("mkdirSync実行後");
-  }
 }
 
